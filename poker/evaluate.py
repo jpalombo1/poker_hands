@@ -1,6 +1,7 @@
-from poker.card import Card
-from poker.common import Suits, Values, VALUE_MAP, CardsLeft
 from itertools import combinations
+
+from poker.card import Card
+from poker.common import VALUE_MAP, CardsLeft, Suits, Values
 
 
 def get_straight(input_hand: list[Card], num_consecutive: int = 5) -> list[list[Card]]:
@@ -105,7 +106,7 @@ def get_kickers(hand: list[Card]) -> list[Card]:
             if pair_kicker in pair
         ]
         num_left = 5 - 2 * len(pairs)
-        use_hand = sum(pair_use, [])
+        use_hand: list[Card] = sum(pair_use, [])
         return _card_kickers(pair_use) + _leftover_kicker(hand, use_hand)[:num_left]
     return _card_kickers([hand])
 
@@ -190,7 +191,7 @@ def head_to_head(input_player_hands: list[list[Card]], player_number: int = 0) -
 
 
 def prob_win(
-    player_hands: list[Card],
+    player_hands: list[list[Card]],
     deck: list[Card],
     cards_left: CardsLeft,
     player_number: int = 0,

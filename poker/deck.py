@@ -1,6 +1,7 @@
+import random
+
 from poker.card import Card
 from poker.common import Suits, Values
-import random
 
 
 def generate_deck() -> list[Card]:

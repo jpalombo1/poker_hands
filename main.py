@@ -6,8 +6,8 @@ Created on Sun Aug 12 23:59:25 2018
 @author: josephpalombo
 """
 from poker.card import Card
-from poker.deck import generate_deck, generate_hand, remove_from_deck
 from poker.common import CardsLeft
+from poker.deck import generate_deck, generate_hand, remove_from_deck
 from poker.evaluate import prob_win
 
 TESTS = 100
