@@ -143,55 +143,76 @@ def get_score(hand: list[Card]) -> int:
     return 0
 
 
-def head_to_head(p1_hand: list[Card], p2_hand: list[Card]) -> float:
-    """Evaluate player 1 vs player 2 hand.
+def head_to_head(input_player_hands: list[list[Card]], player_number: int = 0) -> float:
+    """Evaluate specified player vs other players hand.
 
     Get scores and if still tied (both have pairs, etc.) compare kickers until a winner if not then a tie.
     """
-    p1_score = get_score(p1_hand)
-    p2_score = get_score(p2_hand)
+    player_hands = [p_hand for p_hand in input_player_hands]
+    p_focus_hand = player_hands[player_number]
+    p_score = get_score(p_focus_hand)
+    player_hands.pop(player_number)
+    other_scores = [get_score(p_hand) for p_hand in player_hands]
 
-    if p1_score > p2_score:
+    if all(p_score > o_score for o_score in other_scores):
         return 1.0
-    if p1_score < p2_score:
+    if any(p_score < o_score for o_score in other_scores):
         return 0.0
 
-    p1_kickers = get_kickers(p1_hand)
-    p2_kickers = get_kickers(p2_hand)
-    for p1kick, p2kick in zip(p1_kickers, p2_kickers):
-        p1val = VALUE_MAP[p1kick.value]
-        p2val = VALUE_MAP[p2kick.value]
-        if p1val > p2val:
+    p_kicker = get_kickers(p_focus_hand)
+    tie_players = [
+        p_hand
+        for idx, p_hand in enumerate(player_hands)
+        if other_scores[idx] == p_score
+    ]
+    for pidx, pkick in enumerate(p_kicker):
+        other_kickers = [get_kickers(p_hand)[: len(p_kicker)] for p_hand in tie_players]
+        p_score = VALUE_MAP[pkick.value]
+        other_scores = [
+            VALUE_MAP[okick[pidx].value] for okick in other_kickers if len(okick) > pidx
+        ]
+        if len(other_scores) == 0:
+            return 1.0 / len(tie_players)
+        if all(p_score > o_score for o_score in other_scores):
             return 1.0
-        if p1val < p2val:
+        if any(p_score < o_score for o_score in other_scores):
             return 0.0
-    return 0.5
+        print(tie_players)
+        print(other_scores)
+        tie_players = [
+            p_hand
+            for idx, p_hand in enumerate(tie_players)
+            if other_scores[idx] == p_score
+        ]
+
+    return 1.0 / len(other_kickers)
 
 
 def prob_win(
-    p1_hand: list[Card], p2_hand: list[Card], deck: list[Card], cards_left: CardsLeft
+    player_hands: list[Card],
+    deck: list[Card],
+    cards_left: CardsLeft,
+    player_number: int = 0,
 ) -> float:
-    """Probability of winning from 0 to 1. depending on hand.
+    """Probability of winning from 0 to 1. depending on hand for specified player.
 
     Find all the combinations of cards possible given the deck and number of cards needed.
     Then give each possible combo of cards to each player, calculate who wins.
     Probabilitiy of win for player 1 is # hands won/ total possible hands.
     """
-    p1_win: float = 0.0
+    p_win: float = 0.0
     games: int = 0
     if cards_left == CardsLeft.RIVER:
-        return head_to_head(p1_hand, p2_hand)
+        return head_to_head(player_hands, player_number)
 
     all_cards = combinations(deck, cards_left.value)
-    hand_length = len(p1_hand)
+    hand_length = len(player_hands[player_number])
     for possible_cards in all_cards:
-        p1_hand += possible_cards
-        p2_hand += possible_cards
-        p1_win += head_to_head(p1_hand, p2_hand)
-        p1_hand = p1_hand[:hand_length]
-        p2_hand = p2_hand[:hand_length]
+        player_hands = [
+            player_hand + list(possible_cards) for player_hand in player_hands
+        ]
+        p_win += head_to_head(player_hands, player_number)
+        player_hands = [player_hand[:hand_length] for player_hand in player_hands]
         games += 1
 
-    print(f"\tPossible Games/Combos: {games}")
-
-    return p1_win / games
+    return p_win / games
