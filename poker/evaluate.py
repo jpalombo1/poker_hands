@@ -146,46 +146,47 @@ def get_score(hand: list[Card]) -> int:
 def head_to_head(input_player_hands: list[list[Card]], player_number: int = 0) -> float:
     """Evaluate specified player vs other players hand.
 
-    Get scores and if still tied (both have pairs, etc.) compare kickers until a winner if not then a tie.
+    Get scores and if still tied (many players have pairs, etc.) compare kickers until a winner if not then a tie.
+    Get players hand and all others, then get score of hand and socre of kickers. If score of player exceeds all hands or above scores and ties arrays are 0 length, it is a win.
+    If score is below any hand, where above socre array length > 0, it is a loss.
+    Otherwise tie same value hand so go to kickers, and get player(s) that tie with focused player.
+    Then loop through all scores of kickers of focus player and compare to kickers of other players at same time, so that 1st kicker of focus compared to 1st kicker of players 2,3,4,...
+    If kicker score above all other kickers, return win, if below nay return loss. IF tie, filter out players that aren't tied to focus, then keep iterating to 2nd kicker of focus
+    vs other still tied players 2nd kickers.
     """
     player_hands = [p_hand for p_hand in input_player_hands]
     p_focus_hand = player_hands[player_number]
-    p_score = get_score(p_focus_hand)
     player_hands.pop(player_number)
-    other_scores = [get_score(p_hand) for p_hand in player_hands]
-
-    if all(p_score > o_score for o_score in other_scores):
-        return 1.0
-    if any(p_score < o_score for o_score in other_scores):
-        return 0.0
-
-    p_kicker = get_kickers(p_focus_hand)
-    tie_players = [
-        p_hand
-        for idx, p_hand in enumerate(player_hands)
-        if other_scores[idx] == p_score
+    p_scores = [get_score(p_focus_hand)] + [
+        VALUE_MAP[pkick.value] for pkick in get_kickers(p_focus_hand)
     ]
-    for pidx, pkick in enumerate(p_kicker):
-        other_kickers = [get_kickers(p_hand)[: len(p_kicker)] for p_hand in tie_players]
-        p_score = VALUE_MAP[pkick.value]
-        other_scores = [
-            VALUE_MAP[okick[pidx].value] for okick in other_kickers if len(okick) > pidx
+    other_players_scores = [
+        [get_score(p_hand)] + [VALUE_MAP[pkick.value] for pkick in get_kickers(p_hand)]
+        for p_hand in player_hands
+    ]
+
+    remain_players = other_players_scores
+    for score_idx, p_score in enumerate(p_scores):
+        above_scores_idx = [
+            idx
+            for idx, other_player_scores in enumerate(remain_players)
+            if len(other_player_scores) > score_idx
+            and other_player_scores[score_idx] > p_score
         ]
-        if len(other_scores) == 0:
-            return 1.0 / len(tie_players)
-        if all(p_score > o_score for o_score in other_scores):
-            return 1.0
-        if any(p_score < o_score for o_score in other_scores):
-            return 0.0
-        print(tie_players)
-        print(other_scores)
-        tie_players = [
-            p_hand
-            for idx, p_hand in enumerate(tie_players)
-            if other_scores[idx] == p_score
+        tie_scores_idx = [
+            idx
+            for idx, other_player_scores in enumerate(remain_players)
+            if len(other_player_scores) > score_idx
+            and other_player_scores[score_idx] == p_score
         ]
 
-    return 1.0 / len(other_kickers)
+        if len(above_scores_idx) > 0:
+            return 0.0
+        if len(above_scores_idx) == 0 and len(tie_scores_idx) == 0:
+            return 1.0
+        remain_players = [remain_players[tie_idx] for tie_idx in tie_scores_idx]
+
+    return 1.0 / (len(remain_players) + 1)
 
 
 def prob_win(

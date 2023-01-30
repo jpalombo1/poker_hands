@@ -20,10 +20,11 @@ class Card:
 
     def __str__(self) -> str:
         """Return card value by _ of _ ."""
-        return f"{self.value.value}{self.suit.value}"
+        return f"{self.suit.value}{self.value.value}"
 
     def __repr__(self) -> str:
         """Return card value by _ of _ ."""
+        # return f"Card({self.suit},{self.value})"
         return self.__str__()
 
     def __eq__(self, other) -> bool:

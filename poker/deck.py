@@ -22,7 +22,12 @@ def generate_hand(deck: list[Card], num_cards: int = 2) -> list[Card]:
 
 
 def remove_from_deck(deck: list[Card], cards: list[Card]) -> list[Card]:
-    """Remove list of cards from deck and return it."""
+    """Remove list of cards from deck and return it. If not in the deck, jsut preserve deck as is."""
     for card in cards:
-        deck.pop(deck.index(card))
+        try:
+            index = deck.index(card)
+        except ValueError:
+            continue
+        else:
+            deck.pop(index)
     return deck
